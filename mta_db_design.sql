@@ -124,8 +124,8 @@ min(audit_time) as start_time, max(audit_time) as end_time ,
 min(entries) as entry_start_cnt, max(entries) as entry_end_cnt,
 max(entries) - min(entries) as entry_period_cnt
 FROM sun_brunch 
-WHERE unit = 'R001' # for testing 
-AND scp ='01-00-00' # for testing 
+WHERE unit = 'R001' 		# for testing 
+AND scp ='01-00-00' 		# for testing 
 GROUP BY unit, ca, scp, audit_date
 ORDER BY unit, ca, scp, audit_date, audit_time
 LIMIT 50;
@@ -154,7 +154,7 @@ ORDER BY unit, ca, scp, audit_date, audit_time;
 
 -- 						   CUMULATIVE
 -- BRUNCH - SUNDAY       ENTRIES / EXITS
---   11am - 4pm			   BY STATION
+--   11am - 4pm			   BY STATION 
 
 -----------------------------------------
 -- TEST for one station ( unit = 'R001' ) - BY control area ( 3 ca for 'R001' )
@@ -179,48 +179,29 @@ GROUP BY unit, audit_date
 ORDER BY unit, audit_date;
 -- LIMIT 100; 														# for testing 
 
+-----------------------------------------
+
+-- 						   CUMULATIVE
+-- BRUNCH - SUNDAY       ENTRIES / EXITS
+--   11am - 4pm				BY DAY
+
+-----------------------------------------
+CREATE TABLE sun_total_cnts
+SELECT audit_date,
+sum(station_entry_total_cnt) AS total_day_entries,
+sum(station_exit_total_cnt) AS total_day_exits
+FROM sun_cnts_by_station
+-- WHERE ( audit_date = '2014-11-02' ) 	# for testing 
+GROUP BY audit_date;
 
 
+-----------------------------------------
 
+-- 						   CUMULATIVE
+-- BRUNCH - SUNDAY       ENTRIES / EXITS
+--   11am - 4pm				BY DAY
 
--- SELECT unit, audit_date,
--- sum(entry_start_cnt) as station_entry_start_cnt,
--- sum(entry_end_cnt) as station_entry_end_cnt,
--- sum(exit_start_cnt) as station_exit_start_cnt,
--- sum(exit_end_cnt) as station_exit_end_cnt,
--- sum(entry_period_cnt) as station_entry_total_cnt,
--- sum(exit_period_cnt) as station_exit_total_cnt
-SELECT unit, ca, station, audit_date,
-entry_period_cnt, exit_period_cnt
- FROM sun_cnts_by_turnstile
-WHERE unit = 'R001'   # for testing 
-AND ( audit_date = '2014-11-02' OR audit_date = '2014-11-09')
--- AND ( scp ='01-00-00' OR scp = '01-00-01' )
--- GROUP BY unit, audit_date
-ORDER BY unit, audit_date;
-
-
-
-
-SELECT * FROM sun_cnts_by_turnstile
-ORDER BY unit , audit_date
-LIMIT 150;
-
-
-
-SELECT * ,
-sum(entry_period_cnt) as station_entry_cnt
-FROM sun_cnts_by_turnstile
-WHERE unit = 'R001'   # for testing 
-AND ( scp ='01-00-00' OR scp = '01-00-01' )  # for testing 
-GROUP BY unit, ca, audit_date
-ORDER BY audit_date;
-
-
-
-LIMIT 50;
-
-AND MIN(audit_time)
+-----------------------------------------
 
 -- ALL UNIT VALUES!!! 463 stations
 CREATE TABLE station_list
@@ -237,62 +218,6 @@ AND scp = '00-00-01'
 GROUP BY unit, ca, scp, audit_date, audit_time ;
 
 
-
-
-
-SELECT unit, audit_date, audit_time, entries, exits from sun_brunch 
-WHERE unit = 'R001'
-GROUP BY audit_date, audit_time;
-
-
-SELECT sun_brunch.unit,
-sun_date_list.audit_date, 
-MIN(sun_brunch.audit_time) AS start_time, 
-MAX(sun_brunch.audit_time) AS end_time,
-MIN(sun_brunch.entries) AS start_cnt,
-MAX(sun_brunch.entries) AS end_cnt
-FROM sun_brunch JOIN sun_date_list
-ON (sun_date_list.audit_date = sun_brunch.audit_date)
-GROUP BY sun_brunch.audit_date, sun_brunch.audit_time
-ORDER BY sun_brunch.unit
-LIMIT 50;
-
-
-
-SELECT sun_brunch.unit,
-sun_date_list.audit_date, 
-MIN(sun_brunch.entries) AS start_cnt,
-MAX(sun_brunch.entries) AS end_cnt
-FROM sun_brunch JOIN sun_date_list
-ON (sun_date_list.audit_date = sun_brunch.audit_date)
-GROUP BY sun_brunch.audit_date, sun_brunch.audit_time
-ORDER BY sun_brunch.unit, sun_brunch.audit_date
-LIMIT 50;
-
-
-
-
-
-
-HAVING DISTINCT(audit_date);
-HAVING COUNT(DISTINCT(audit_date)) > 1;
-
-group by EmailAddress, CustomerName
-
------------------------------------------
-
--- for TESTING!!!!
-
------------------------------------------
-
--- Also calculate the total salary for these teams -- their salary budget.
-
-INSERT OVERWRITE DIRECTORY '/user/jess/baseballdata/total_team_salary.txt'
-SELECT Teams.name, Salaries.yearID, AVG(Salaries.salary) FROM Salaries JOIN Teams
-ON (Salaries.teamID = Teams.teamID)
-WHERE Salaries.yearID IN (2000, 2005, 2010)
-AND Teams.name IN ('New York Yankees' ,'New York Mets' , 'Chicago Cubs' ,'Chicago White Sox' ) 
-GROUP BY Teams.name, Salaries.yearID;
 
 -----------------------------------------
 
@@ -338,11 +263,6 @@ cursor.close()
 db.close()
 
 
-
-INSERT IGNORE 
-    INTO all_hospitals
-SELECT *
-    FROM va_tidy;
 
 -- Field Description
 
