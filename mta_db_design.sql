@@ -62,6 +62,7 @@ cat new_format_list.txt | xargs tail -n+2 > ALLNEW.txt
 LOAD DATA LOCAL INFILE "ALLNEW.txt"
     INTO TABLE mta_new FIELDS TERMINATED BY "," IGNORE 1 LINES;
 
+-- change string to DATE ( better for sorting!!! )
 UPDATE mta_new
 SET audit_date = STR_TO_DATE(audit_date ,'%m/%d/%Y');
 
@@ -70,16 +71,18 @@ ALTER TABLE mta_new
 ADD COLUMN audit_day INT
 AFTER audit_time;
 
--- ODBC standard: WEEKDAY
+-----------------------------------------
+-- DAYOFWEEK(date)
 
--- UPDATE mta_new
--- SET audit_day = WEEKDAY(STR_TO_DATE(audit_date ,'%m/%d/%Y') ) ;
+-- Returns the weekday index for date (1 = Sunday, 2 = Monday, ., 7 = Saturday).
+-- These index values correspond to the ODBC standard.
 
--- UPDATE mta_new
--- SET audit_day = DAYOFWEEK(STR_TO_DATE(audit_date ,'%m/%d/%Y') ) ;
-
+-----------------------------------------
 UPDATE mta_new
-SET audit_day = WEEKDAY(audit_date) ;
+SET audit_day = DAYOFWEEK(audit_date) ;
+
+-- UPDATE mta_new
+-- SET audit_day = WEEKDAY(audit_date) ;
 
 -----------------------------------------
 
@@ -93,12 +96,17 @@ ADD COLUMN audit_week INT
 AFTER audit_day;
 
 UPDATE mta_new
-SET audit_week = WEEK(STR_TO_DATE(audit_date ,'%m/%d/%Y') ) ;
+SET audit_week = WEEK(audit_date) ;
 
 -----------------------------------------
 
 -- BRUNCH - SUNDAY
 --   11am - 4pm
+
+	   -----------------------------------------
+--  !!!!!!!         OBSERVED PROBLEM:       !!!!!!!!
+       -----------------------------------------
+-- 	some days only have 1 AUDIT in "burnch time period"
 
 -----------------------------------------
 CREATE TABLE sun_brunch
@@ -124,8 +132,8 @@ min(audit_time) as start_time, max(audit_time) as end_time ,
 min(entries) as entry_start_cnt, max(entries) as entry_end_cnt,
 max(entries) - min(entries) as entry_period_cnt
 FROM sun_brunch 
-WHERE unit = 'R001' 		# for testing 
-AND scp ='01-00-00' 		# for testing 
+WHERE unit = 'R001' # for testing 
+AND scp ='01-00-00' # for testing 
 GROUP BY unit, ca, scp, audit_date
 ORDER BY unit, ca, scp, audit_date, audit_time
 LIMIT 50;
@@ -249,9 +257,6 @@ SELECT
 -- +----------------------+
 
 
-SELECT * FROM mta_new
-	GROUP BY unit
-	LIMIT 500;
 
 cursor = db.cursor()
 
