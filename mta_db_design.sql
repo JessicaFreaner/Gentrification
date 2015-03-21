@@ -131,6 +131,8 @@ ORDER BY unit, ca, scp, audit_date, audit_time
 LIMIT 50;
 
 -----------------------------------------
+--  NOTE : adjust to 5pm end of day!!!!
+
 
 -- 						   CUMULATIVE
 -- BRUNCH - SUNDAY       ENTRIES / EXITS
@@ -139,10 +141,10 @@ LIMIT 50;
 -----------------------------------------
 CREATE TABLE sun_cnts_by_turnstile
 SELECT ca, unit, scp, station, linename, audit_date, 
-min(audit_time) as start_time, max(audit_time) as end_time ,
-min(entries) as entry_start_cnt, max(entries) as entry_end_cnt,
+min(audit_time) as start_time, max(audit_time) as end_time ,    # start / end times
+min(entries) as entry_start_cnt, max(entries) as entry_end_cnt, # start / end cnts
 max(entries) - min(entries) as entry_period_cnt,
-min(exits) as exit_start_cnt, max(exits) as exit_end_cnt,
+min(exits) as exit_start_cnt, max(exits) as exit_end_cnt,       # start / end cnts
 max(exits) - min(exits) as exit_period_cnt
 FROM sun_brunch 
 GROUP BY unit, ca, scp, audit_date
@@ -152,15 +154,71 @@ ORDER BY unit, ca, scp, audit_date, audit_time;
 
 -- 						   CUMULATIVE
 -- BRUNCH - SUNDAY       ENTRIES / EXITS
---   11am - 4pm			  BY TURNSTILE
+--   11am - 4pm			   BY STATION
 
 -----------------------------------------
+-- TEST for one station ( unit = 'R001' ) - BY control area ( 3 ca for 'R001' )
+SELECT unit, ca, station, audit_date,
+sum(entry_period_cnt) as station_entry_total_cnt,
+sum(exit_period_cnt) as station_exit_total_cnt
+FROM sun_cnts_by_turnstile
+WHERE unit = 'R001'   										   # for testing 
+AND ( audit_date = '2014-11-02' OR audit_date = '2014-11-09')  # for testing 
+-- AND ( scp ='01-00-00' OR scp = '01-00-01' ) 				   # for testing 
+GROUP BY unit, ca, audit_date
+ORDER BY unit, ca, audit_date;
+
+-- CREATE TABLE FOR ALL STATIONS ( id = unit )
+CREATE TABLE sun_cnts_by_station
+SELECT unit, station, audit_date,
+sum(entry_period_cnt) as station_entry_total_cnt,
+sum(exit_period_cnt) as station_exit_total_cnt
+FROM sun_cnts_by_turnstile
+-- WHERE ( audit_date = '2014-11-02' OR audit_date = '2014-11-09') 	# for testing 
+GROUP BY unit, audit_date
+ORDER BY unit, audit_date;
+-- LIMIT 100; 														# for testing 
 
 
 
+
+
+-- SELECT unit, audit_date,
+-- sum(entry_start_cnt) as station_entry_start_cnt,
+-- sum(entry_end_cnt) as station_entry_end_cnt,
+-- sum(exit_start_cnt) as station_exit_start_cnt,
+-- sum(exit_end_cnt) as station_exit_end_cnt,
+-- sum(entry_period_cnt) as station_entry_total_cnt,
+-- sum(exit_period_cnt) as station_exit_total_cnt
+SELECT unit, ca, station, audit_date,
+entry_period_cnt, exit_period_cnt
+ FROM sun_cnts_by_turnstile
+WHERE unit = 'R001'   # for testing 
+AND ( audit_date = '2014-11-02' OR audit_date = '2014-11-09')
+-- AND ( scp ='01-00-00' OR scp = '01-00-01' )
+-- GROUP BY unit, audit_date
+ORDER BY unit, audit_date;
+
+
+
+
+SELECT * FROM sun_cnts_by_turnstile
+ORDER BY unit , audit_date
+LIMIT 150;
+
+
+
+SELECT * ,
+sum(entry_period_cnt) as station_entry_cnt
+FROM sun_cnts_by_turnstile
 WHERE unit = 'R001'   # for testing 
 AND ( scp ='01-00-00' OR scp = '01-00-01' )  # for testing 
+GROUP BY unit, ca, audit_date
+ORDER BY audit_date;
 
+
+
+LIMIT 50;
 
 AND MIN(audit_time)
 
