@@ -101,13 +101,13 @@ SET audit_week = WEEK(audit_date) ;
 -----------------------------------------
 
 -- BRUNCH - SUNDAY
---   11am - 4pm
+--   11am - 5pm
 
 	   -----------------------------------------
 --  !!!!!!!         OBSERVED PROBLEM:       !!!!!!!!
        -----------------------------------------
 -- 	some days only have 1 AUDIT in "burnch time period"
-
+-- 				extended period to 5pm 
 -----------------------------------------
 CREATE TABLE sun_brunch
 SELECT * FROM mta_new
@@ -115,14 +115,20 @@ WHERE audit_day = 1
 AND audit_time >= '11:00:00' 
 AND audit_time <= '16:00:00';
 
+CREATE TABLE long_sun_brunch
+SELECT * FROM mta_new
+WHERE audit_day = 1 
+AND audit_time >= '11:00:00' 
+AND audit_time <= '17:00:00';
+
 -- one station - one Sunday
-SELECT * from sun_brunch WHERE unit = 'R001' AND audit_date = '2014-10-12';
-SELECT * from sun_brunch WHERE unit = 'R092' AND audit_date = '2014-10-26';
+SELECT * from long_sun_brunch WHERE unit = 'R001' AND audit_date = '2014-10-12';
+SELECT * from long_sun_brunch WHERE unit = 'R092' AND audit_date = '2014-10-26';
 --  OBSERVED PROBLEM: some days only have 1 AUDIT in "burnch time period"
 
 
 -- SELECT ALL date / time combos for STATION:
-SELECT * from sun_brunch WHERE unit = 'R001'
+SELECT * from long_sun_brunch WHERE unit = 'R001'
 GROUP BY audit_date, audit_time;
 
 
@@ -131,7 +137,7 @@ SELECT ca, unit, scp, station, linename, audit_date, entries, exits,
 min(audit_time) as start_time, max(audit_time) as end_time ,
 min(entries) as entry_start_cnt, max(entries) as entry_end_cnt,
 max(entries) - min(entries) as entry_period_cnt
-FROM sun_brunch 
+FROM long_sun_brunch 
 WHERE unit = 'R001' # for testing 
 AND scp ='01-00-00' # for testing 
 GROUP BY unit, ca, scp, audit_date
@@ -144,17 +150,17 @@ LIMIT 50;
 
 -- 						   CUMULATIVE
 -- BRUNCH - SUNDAY       ENTRIES / EXITS
---   11am - 4pm			  BY TURNSTILE
+--   11am - 5pm			  BY TURNSTILE
 
 -----------------------------------------
-CREATE TABLE sun_cnts_by_turnstile
+CREATE TABLE long_sun_cnts_by_turnstile
 SELECT ca, unit, scp, station, linename, audit_date, 
 min(audit_time) as start_time, max(audit_time) as end_time ,    # start / end times
 min(entries) as entry_start_cnt, max(entries) as entry_end_cnt, # start / end cnts
 max(entries) - min(entries) as entry_period_cnt,
 min(exits) as exit_start_cnt, max(exits) as exit_end_cnt,       # start / end cnts
 max(exits) - min(exits) as exit_period_cnt
-FROM sun_brunch 
+FROM long_sun_brunch 
 GROUP BY unit, ca, scp, audit_date
 ORDER BY unit, ca, scp, audit_date, audit_time;
 
@@ -162,52 +168,68 @@ ORDER BY unit, ca, scp, audit_date, audit_time;
 
 -- 						   CUMULATIVE
 -- BRUNCH - SUNDAY       ENTRIES / EXITS
---   11am - 4pm			   BY STATION 
+--   11am - 5pm			   BY STATION 
 
 -----------------------------------------
 -- TEST for one station ( unit = 'R001' ) - BY control area ( 3 ca for 'R001' )
 SELECT unit, ca, station, audit_date,
 sum(entry_period_cnt) as station_entry_total_cnt,
 sum(exit_period_cnt) as station_exit_total_cnt
-FROM sun_cnts_by_turnstile
-WHERE unit = 'R001'   										   # for testing 
+FROM long_sun_cnts_by_turnstile
+WHERE unit = 'R001'                                            # for testing 
 AND ( audit_date = '2014-11-02' OR audit_date = '2014-11-09')  # for testing 
--- AND ( scp ='01-00-00' OR scp = '01-00-01' ) 				   # for testing 
+-- AND ( scp ='01-00-00' OR scp = '01-00-01' )                 # for testing 
 GROUP BY unit, ca, audit_date
 ORDER BY unit, ca, audit_date;
 
 -- CREATE TABLE FOR ALL STATIONS ( id = unit )
-CREATE TABLE sun_cnts_by_station
+CREATE TABLE long_sun_cnts_by_station
 SELECT unit, station, audit_date,
 sum(entry_period_cnt) as station_entry_total_cnt,
 sum(exit_period_cnt) as station_exit_total_cnt
-FROM sun_cnts_by_turnstile
+FROM long_sun_cnts_by_turnstile
 -- WHERE ( audit_date = '2014-11-02' OR audit_date = '2014-11-09') 	# for testing 
 GROUP BY unit, audit_date
 ORDER BY unit, audit_date;
 -- LIMIT 100; 														# for testing 
 
 -----------------------------------------
+--  NOTE : Data entry ERROR !!!!!!!!
+-----------------------------------------
 
--- 						   CUMULATIVE
--- BRUNCH - SUNDAY       ENTRIES / EXITS
---   11am - 4pm				BY DAY
+-- OUTLIER!!!!!!!
+
+
+-- -- user error :SELECT * FROM long_sun_brunch WHERE unit = 'R029' AND audit_week = 5;
+-- +------+------+----------+-----------------+----------+----------+------------+------------+-----------+------------+-------------+-----------+-----------+
+-- | ca   | unit | scp      | station         | linename | division | audit_date | audit_time | audit_day | audit_week | description | entries   | exits     |
+-- +------+------+----------+-----------------+----------+----------+------------+------------+-----------+------------+-------------+-----------+-----------+
+-- | N092 | R029 | 03-06-00 | CHAMBERS ST     | ACE23    | IND      | 2015-02-01 | 11:00:00   |         1 |          5 | REGULAR     |   1408391 |   1419017 | <<<<< !!!!!
+-- | N092 | R029 | 03-06-00 | CHAMBERS ST     | ACE23    | IND      | 2015-02-01 | 15:00:00   |         1 |          5 | REGULAR     | 352356225 | 352327596 | <<<<< !!!!!
+-- +------+------+----------+-----------------+----------+----------+------------+------------+-----------+------------+-------------+-----------+-----------+
+
+
 
 -----------------------------------------
-CREATE TABLE sun_total_cnts
+-- 						   CUMULATIVE
+-- BRUNCH - SUNDAY       ENTRIES / EXITS
+--   11am - 5pm				BY DATE
+
+-----------------------------------------
+CREATE TABLE long_sun_total_cnts
 SELECT audit_date,
 sum(station_entry_total_cnt) AS total_day_entries,
 sum(station_exit_total_cnt) AS total_day_exits
-FROM sun_cnts_by_station
+FROM long_sun_cnts_by_station
 -- WHERE ( audit_date = '2014-11-02' ) 	# for testing 
 GROUP BY audit_date;
 
 
 -----------------------------------------
 
--- 						   CUMULATIVE
+-- 						  PROPORTION OF 
 -- BRUNCH - SUNDAY       ENTRIES / EXITS
---   11am - 4pm				BY DAY
+--   11am - 5pm				BY DATE
 
 -----------------------------------------
 
@@ -266,6 +288,27 @@ for i in cursor.fetchall():
 
 cursor.close()
 db.close()
+
+
+-----------------------------------------
+
+-- 			STATION   GEOCODES
+
+-----------------------------------------
+CREATE TABLE mta_geocodes(
+	unit VARCHAR(255),
+	ca VARCHAR(255),
+	station VARCHAR(255),
+	linename VARCHAR(255),
+	division VARCHAR(255),
+	latitude DOUBLE,
+	longitude DOUBLE
+);
+
+--  LOAD file DATA into TABLE: MySQL
+LOAD DATA LOCAL INFILE "geocoded.csv"
+    INTO TABLE mta_new FIELDS TERMINATED BY ",";
+
 
 
 
