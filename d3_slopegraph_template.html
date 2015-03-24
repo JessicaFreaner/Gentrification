@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Slopegraph.js</title>
+<style type="text/css">
+</style>
+<script src="http://github.com/mbostock/d3/raw/master/d3.min.js"></script>
+<script type="text/javascript">
+// var dataset=[[10, 100], [430, 441], [103, 89], [228, 62], [393, 258], [250, 167], [290, 322], [480, 17], [94, 27], [116, 163]]
+// ------------------NOTE: ABOUT DATA FORMAT---------------------
+// each number pair : [initial point value, end point value]
+// if p1 < p2, then SLOPE goes down; 
+// if p1 > p2, then SLOPE goes up 
+// ------------------NOTE: ABOUT DATA FORMAT---------------------
+var dataset=[[10, 100], [430, 441], [103, 89], [228, 62], [393, 258], [250, 167], [290, 322], [480, 17], [94, 27], [116, 163]]
+var widthOfCanvas = '500';
+var heightOfCanvas = dataset.join().split(',').sort(function(a,b){return b - a})[0];
+window.onload = function() {
+var drawingCanvas = document.getElementById('slopegraph');
+drawingCanvas.setAttribute('width', widthOfCanvas);
+drawingCanvas.setAttribute('height', heightOfCanvas);
+if(drawingCanvas && drawingCanvas.getContext) {
+var context = drawingCanvas.getContext('2d');
+context.strokeStyle = "#ccc";
+function chart(leftValue, rightValue){
+context.moveTo(0,leftValue);
+context.lineTo(widthOfCanvas, rightValue);
+context.stroke();
+};
+for (var key in dataset) {
+chart(dataset[key][0], dataset[key][1]);
+};
+}
+var vis = d3.select("#svgslopegraph").append("svg:svg")
+.attr("width", widthOfCanvas)
+.attr("height", heightOfCanvas);
+vis.selectAll("line")
+.data(dataset)
+.enter()
+.append("svg:line")
+.style("stroke-width", 1)
+.style("stroke", "#ccc")
+.attr("y1", function (d) { return d[0]; })
+.attr("y2", function (d) { return d[1]; })
+.attr("x1", function (d) { return 0; })
+.attr("x2", function (d) { return widthOfCanvas; });
+}
+</script>
+</head>
+<body>
+<canvas id="slopegraph">
+<p>Your browser doesn't support canvas. Firefox and Chrome do, though.</p>
+</canvas>
+<div id="svgslopegraph" style="position:absolute; top: 10px;left: 600px;"></div>
+</body>
+</html>

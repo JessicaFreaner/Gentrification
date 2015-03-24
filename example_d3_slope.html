@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Life Expectancy Slope Graph: 1960 &ndash; 2011</title>
+  <script src="d3.js"></script>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <style>
+    body   { color: #444; background: #f3f3f3; font: normal 12px "Adobe Garamond Pro", "Palatino", serif; margin: 2em; }
+    header { margin: 0 0 20px 220px; border-bottom: 1px solid #6c6c6c; width: 360px; position: relative; }
+    h1     { font-size: 28px; font-weight: normal; text-shadow: #fff 0 1px 0; margin: 0 0 0 0; padding: 0; }
+    small  { color: #a3a3a3; font-size: 12px; position: absolute; bottom: -1.8em; left: 0;}
+    a      { color: #a3a3a3; }
+
+    span.label_year:hover { cursor: ew-resize; }
+
+    text.label { fill: #444; }
+    text.label.start { text-anchor: end; }
+    line.slope { stroke: #444; stroke-width: 1; }
+
+    .missing text.label { display: none; }
+    .missing line.slope { display: none; }
+
+    .over text.label { fill: #bb2629; }
+    .over line.slope { stroke: #bb2629; stroke-width: 2; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 title="Move your mouse over years to change range...">
+      Life Expectancy <span class="label_year" id="from">1960</span>
+                      &ndash;
+                      <span class="label_year" id="to">2009</span>
+    </h1>
+    <small>With data from <a href="http://data.worldbank.org/indicator/SP.DYN.LE00.IN">WorldBank</a></small>
+  </header>
+  <div id="chart"></div>
+</body>
+
+<script>
+  d3.csv("life-expectancy-full.csv", function(csv) {
+    data = csv;
+    // console.log("CSV", csv);
+
+    var
+        // Extract years from the dataset
+        years     = d3.keys(csv[0]).filter( function(d) { return d.match(/^\d/) }), // Return numerical keys
+        // Extract names of countries from the dataset
+        countries = csv.map( function(d) { return d["Country Name"] }),
+        // Return true for countries without start/end values
+        missing   = function(d) { return !d.start || !d.end; },
+
+        font_size = 12,
+        margin    = 20,
+        width     = 800,
+        height    = countries.length * font_size + margin,
+
+        chart     = d3.select("#chart").append("svg")
+                   .attr("width",  width)
+                   .attr("height", height);
+
+    // Scales
+    var y = d3.scale.linear()
+              .domain([0, countries.length])
+              .range([margin, height]);
+
+    var slope = d3.scale.linear()
+                  .domain( [83, 29] )
+                  .range([margin, height]);
+    var year_scale = d3.scale.linear()
+                       .domain([ parseInt(d3.first(years)), parseInt(d3.last(years)) ])
+                       .clamp(true);
+
+    // Update the chart graphics based on new data for selected year
+    var update = function( from, to ) {
+      var
+        // Extract country names and start/end values from the dataset
+        data      = csv
+                      .map( function(d) {
+                        var r = {
+                          label: d["Country Name"],
+                          start: parseFloat(d[from]),
+                          end:   parseFloat(d[to])
+                        };
+                        // console.log(r);
+                        return r;
+                      })
+                      // Sort in descending order
+                      .sort( function(a,b) {
+                        return d3.max([a.start, a.end]) > d3.max([b.start, b.end]) ?
+                               -1 :
+                               d3.max([a.start, a.end]) < d3.max([b.start, b.end]) ?
+                               1 : 0;
+                      } ),
+        // Compute the minimum and maximum value in the dataset
+        extent    = [ csv.map(function(d) {
+                                return d3.entries(d)
+                                         .filter(function(d) { return d.key.match(/^\d/) })
+                                         .map(function(d) { return d.value })
+                              }) ];
+
+      // Countries
+      var country = chart.selectAll("g.country")
+                      .data( data );
+      country
+        .enter()
+        .append("g")
+        .attr("class", "country");
+
+      country
+        .classed("missing", function(d) { return missing(d); });
+
+      country
+        .on("mouseover", function(d,i) { return d3.select(this).classed("over", true); })
+        .on("mouseout",  function(d,i) { return d3.select(this).classed("over", false); });
+
+      // ** Left column
+      var left_column = country
+                          .selectAll("text.label.start")
+                            .data( function(d) { return [d]; } );
+          left_column
+           .enter()
+            .append("text")
+            .classed("label start", true)
+            .attr("xml:space", "preserve")
+            .style("font-size", font_size)
+            .attr("x", 200)
+            .attr("y", 0);
+
+          left_column
+            .attr("y", function(d,i) { return slope(d.start); })
+            .text(function(d) { return d.label+ "   " + d3.round(d.start, 1); });
+
+      // ** Right column
+      var right_column = country
+                          .selectAll("text.label.end")
+                            .data( function(d) { return [d]; } );
+
+          right_column
+           .enter()
+            .append("text")
+            .classed("label end", true)
+            .attr("xml:space", "preserve")
+            .style("font-size", font_size)
+            .attr("x", width-200)
+            .attr("y", 0);
+
+          right_column
+            .attr("y", function(d,i) { return slope(d.end); })
+            .text(function(d) { return d3.round(d.end, 1) + "   " + d.label; });
+
+
+      // ** Slope lines
+      var line = country
+                    .selectAll("line.slope")
+                      .data( function(d) { return [d]; } );
+          line
+           .enter()
+            .append("line")
+            .attr("x1", 210)
+            .attr("x2", width-210)
+            .attr("opacity", 0)
+            .attr("y1", 0)
+            .attr("y2", 0);
+
+          line
+            .classed("slope", function(d) { return d.start || d.end; })
+            .attr("opacity", 1)
+            .attr("y1", function(d,i) { return d.start && d.end ? Math.round( slope(d.start) - font_size/2 + 2) : null; })
+            .attr("y2", function(d,i) { return d.start && d.end ? Math.round( slope(d.end)   - font_size/2 + 2) : null; });
+
+
+      return chart;
+    };
+
+    // Change year range
+    //
+    d3.selectAll(".label_year")
+      .on("mousemove", function() {
+            var $this = d3.select(this),
+                box   = $this.node();
+
+            value  = d3.round(year_scale.range([2, box.offsetWidth-2]).invert(d3.mouse(this)[0]))
+            d3.select(this).text(value)
+
+            if ( d3.select("#from").text() > d3.select("#to").text()   ) {
+              d3.select("#from").text( d3.select("#to").text() )
+            }
+            if ( d3.select("#to").text()   < d3.select("#from").text() ) {
+              d3.select("#to").text( d3.select("#from") )
+            }
+
+            return update( d3.select("#from").text(), d3.select("#to").text() );
+      });
+
+
+    return update( d3.first(years), d3.last(years) );
+  });
+</script>
+
+</html>

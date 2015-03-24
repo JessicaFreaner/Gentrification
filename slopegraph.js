@@ -16,21 +16,8 @@ d3.custom.slopegraph = function() {
             var chartWidth = opts.width - opts.margin.right - opts.margin.left;
 
 
-            // // Get the data
-            // d3.tsv("test.tsv", function(error, data) {
-            //   data.forEach(function(d) {
-            //     d.borough = d.borough;
-            //     d.neighborhood = d.neighborhood;
-            //     d.station = +d.station;
-            //     d.latitude = +d.latitude;
-            //     d.longitude = +d.longitude;
-            //     d.brunch_start = +d.brunch_start;
-            //     d.brunch_end = +d.brunch_end;
-            //   });
-
-
             var parent = d3.select(this);
-            console.log(this);
+            // console.log(this);
             var svg = parent.selectAll("svg.chart-root").data([0]);
             svg.enter().append("svg").attr("class", "chart-root")
                     .append('g').attr('class', 'chart-group');
@@ -61,9 +48,21 @@ d3.custom.slopegraph = function() {
                 .attr("dy", -4);
 
 
-            dataNest = d3.nest()
-                    .key(function(d) {return d.borough;})
-                    .entries(data);
+                        // Get the data
+            // d3.tsv("test.tsv", function(error, data) {
+            //   data.forEach(function(d) {
+            //     d.borough = d.borough;
+            //     d.neighborhood = d.neighborhood;
+            //     d.station = +d.station;
+            //     d.latitude = +d.latitude;
+            //     d.longitude = +d.longitude;
+            //     d.brunch_start = +d.brunch_start;
+            //     d.brunch_end = +d.brunch_end;
+            //   });
+
+            // dataNest = d3.nest()
+            //         .key(function(d) {return d.borough;})
+            //         .entries(data);
 
 
             var lines = chartSvg.selectAll('line.slope-line')
@@ -78,9 +77,19 @@ d3.custom.slopegraph = function() {
                 .on("mouseover", function(){
                     d3.select(this)
                       .transition()
-                      .duration(50)
+                      .duration(250)
                       .style("stroke-width", 5)
-                });
+                      .style("stroke", "red")
+                })
+                .on("mouseout", function(){
+                    // console.log("testing")
+                    d3.select(this)
+                      .transition()
+                      .duration(250)
+                      .style("stroke-width", 2)
+                      .style("stroke", "steelblue")
+                })
+                ;
 
             var leftLabels = chartSvg.selectAll('text.left_labels')
                 .data(data);
@@ -95,27 +104,21 @@ d3.custom.slopegraph = function() {
                 .on("mouseover", function(){
                     d3.select(this)
                       .transition()
-                      .duration(50)
+                      .duration(250)
                       .style("font-size", 25)
                       .style("fill", "red")
 
-                });
+                })
+                .on("mouseout", function(){
+                    // console.log("testing")
+                    d3.select(this)
+                      .transition()
+                      .duration(250)
+                      .style("font-size", 20)
+                      .style("fill", "black")
+                })
+                ;
             // leftLabels.exit().remove();
-
-
-          // .on("mouseover", function(){
-          //     if (d.active != true) {
-          //       d3.selectAll("#tag"+d.key.replace(/\s+/g, ''))
-          //         .transition()
-          //         .duration(50)
-          //         .style("opacity", 1)
-          //       d3.select(this)
-          //         .transition()
-          //         .duration(50)
-          //         .style("font-size", function() {
-          //           if (d.active != true) {return 25} 
-          //         })
-          //         ;
 
 
             var rightLabels = chartSvg.selectAll('text.right_labels')
@@ -126,9 +129,27 @@ d3.custom.slopegraph = function() {
                     x: opts.width - opts.margin.right - opts.labelLength + 10,
                     y: function(d,i) { return yscale(d[1]); },
                     dy: '.35em'})
-                .text(function(d,i) { return d[1] });
+                .text(function(d,i) { return d[1] })
+                .on("mouseover", function(){
+                    d3.select(this)
+                      .transition()
+                      .duration(50)
+                      .style("font-size", 25)
+                      .style("fill", "red")
+
+                })
+                .on("mouseout", function(){
+                    // console.log("testing")
+                    d3.select(this)
+                      .transition()
+                      .duration(250)
+                      .style("font-size", 20)
+                      .style("fill", "black")
+                })
+                ;
             // rightLabels.exit().remove();
-        });
+
+        }); 
     }
 
     exports.opts = opts;
